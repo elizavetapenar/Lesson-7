@@ -1,0 +1,140 @@
+//1. Придумать класс, методы которого могут создавать непоправимые ошибки. Реализовать их с помощью try/catch.
+//
+//2. Придумать класс, методы которого могут завершаться неудачей. Реализовать их с использованием Error.
+
+import UIKit
+import Foundation
+
+struct Clothes {
+    let brand: String
+}
+
+enum ShopError: Error {
+    case invalidSelection
+    case outOfStock
+    case insufficientFunds(coinsNeeded: Int)
+    case noSize
+}
+
+struct Item {
+    var price: Int
+    var size: Int
+    var count: Int
+    let clothes: Clothes
+}
+
+class ShopppingCenter {
+    var clothes = [
+        "T-Shirt": Item(price: 300, size: 34, count: 0, clothes: Clothes(brand: "Bershka")),
+        "Jeans": Item (price: 400, size: 40, count: 2, clothes: Clothes (brand: "Pull and Bear")),
+        "Longsleeve": Item(price: 500, size: 32, count: 5, clothes: Clothes (brand: "Stradivarius"))
+    ]
+    
+    var coinsDeposit = 0
+    var sizeNeeded = 0
+    
+    func shop(itemNamed name: String) throws -> Clothes {
+        guard let item = clothes[name] else {
+            throw ShopError.invalidSelection
+        }
+        guard item.size == sizeNeeded else {
+            throw ShopError.noSize
+        }
+        guard item.count > 0  else {
+            throw ShopError.outOfStock
+        }
+        guard item.price <= coinsDeposit else {
+            throw ShopError.insufficientFunds(coinsNeeded: item.price - coinsDeposit)
+        }
+
+        coinsDeposit -= item.price
+        var newItem = item
+        newItem.count -= 1
+        clothes[name] = newItem
+        
+        return newItem.clothes
+    }
+}
+
+let thing = ShopppingCenter()
+do {
+    thing.coinsDeposit = 200
+    thing.sizeNeeded = 34
+    try thing.shop(itemNamed: "T-Shirt")
+}
+catch ShopError.invalidSelection {
+    print ("Такого товара не существует")
+}
+catch ShopError.outOfStock {
+    print("Товар закончился")
+}
+catch ShopError.noSize {
+        print ("Размера нет")
+}
+catch ShopError.insufficientFunds(let needed) {
+    print("Недосточно средств! Нужно еще \(needed) рублей")
+}
+catch let error {
+    print(error.localizedDescription)
+}
+
+struct Things {
+    let brand: String
+}
+
+enum ThingsError: Error {
+    case noProduct
+    case ended
+    case needFunds(moneyNeeded: Int)
+    case noDimension
+}
+
+struct Object {
+    var price: Int
+    var size: Int
+    var count: Int
+    let thing: Things
+}
+
+class ShoppingMall {
+    var clothes = [
+        "T-Shirt": Object(price: 300, size: 34, count: 1, thing: Things(brand: "Bershka")),
+        "Jeans": Object(price: 200, size: 40, count: 3, thing: Things(brand: "Pull and Bear")),
+        "Longsleeve": Object(price: 500, size: 32, count: 3, thing: Things(brand: "Stradivarius"))
+    ]
+    
+    var coinsDeposit = 0
+    var sizeNeeded = 0
+    
+    func stuff(itemNamed name: String) -> (Things?, ThingsError?) {
+        guard let thing = clothes[name] else {
+            return (nil, ThingsError.noProduct)
+        }
+        guard thing.count > 0 else {
+            return (nil, ThingsError.ended)
+        }
+        guard thing.size == sizeNeeded else {
+            return (nil, ThingsError.noDimension)
+        }
+        guard thing.price <= coinsDeposit else {
+            return (nil, ThingsError.needFunds(moneyNeeded: thing.price - coinsDeposit))
+        }
+        coinsDeposit -= thing.price
+        var newThing = thing
+        newThing.count -= 1
+        clothes[name] = newThing
+        
+        return (newThing.thing, nil)
+    }
+}
+let shoppingMall = ShoppingMall ()
+shoppingMall.coinsDeposit = 100
+shoppingMall.sizeNeeded = 34
+let sell1 = shoppingMall.stuff(itemNamed: "T-Shirt")
+let sell2 = shoppingMall.stuff(itemNamed: "Jacket")
+let sell3 = shoppingMall.stuff(itemNamed: "Longsleeve")
+if let product = sell1.0 {
+    print ("Мы купили: \(product.brand)")
+} else if let error = sell1.1 {
+    print("Произошла ошибка: \(error.self)")
+}
